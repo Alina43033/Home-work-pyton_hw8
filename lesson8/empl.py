@@ -1,54 +1,67 @@
-from empl import Company
+import requests
 
 
-api = Company("https://x-clients-be.onrender.com")
+class Company:
 
+    def __init__(self, url):
+        self.url = url
 
-def test_get_list_of_employees():
-    name = "Andrey"
-    descr = "test"
-    company = api.create_company(name, descr)
-    new_id = company["id"]
-    employee_list = api.get_list_employee(new_id)
-    assert len(employee_list) == 0
+    def get_token(self, user='bloom', password='fire-fairy'):
+        creds = {
+            'username': user,
+            'password': password
+        }
+        resp = requests.post(f"{self.url}/auth/login", json=creds)
+        return resp.json()["userToken"]
 
+    def create_company(self, name, description=''):
+        company = {
+            "name": name,
+            "description": description
+        }
+        my_headers = {}
+        my_headers["x-client-token"] = self.get_token()
+        resp = requests.post(f"{self.url}/company", json=company, headers=my_headers)
+        return resp.json()
 
-def test_add_new_employee():
-    name = "Andrey"
-    descr = "test"
-    company = api.create_company(name, descr)
-    new_id = company["id"]
-    new_employee = api.add_new_employee(new_id, "Andrey666", "B")
-    assert new_employee["id"] > 0
+    def get_list_employee(self, id):
+        my_params = {
+            "company": id
+        }
+        resp = requests.get(f"{self.url}/employee", params=my_params)
+        return resp.json()
 
-    resp = api.get_list_employee(new_id)
-    assert resp[0]["companyId"] == new_id
-    assert resp[0]["firstName"] == "Andrey666"
-    assert resp[0]["isActive"] == True
-    assert resp[0]["lastName"] == "B"
+    def get_employee_by_id(self, id_employee):
+        resp = requests.get(f"{self.url}/employee/{id_employee}")
+        return resp.json()
 
+    def add_new_employee(self, new_id, name, last_name):
+        employee = {
+            "id": 1,
+            "firstName": name,
+            "lastName": last_name,
+            "middleName": "-",
+            "companyId": new_id,
+            "email": "test@test.ru",
+            "url": "string",
+            "phone": "89999999999",
+            "birthdate": "2024-06-12T18:54:13.783Z",
+            "isActive": 'true'
+        }
 
-def test_get_employee_by_id():
-    name = "Andrey"
-    descr = "test"
-    company = api.create_company(name, descr)
-    new_id = company["id"]
-    new_employee = api.add_new_employee(new_id, "Andrey666", "Be")
-    id_employee = new_employee["id"]
-    get_info = api.get_employee_by_id(id_employee)
-    assert get_info["firstName"] == "Andrey666"
-    assert get_info["lastName"] == "Be"
+        my_headers = {}
+        my_headers["x-client-token"] = self.get_token()
+        resp = requests.post(f"{self.url}/employee", headers=my_headers, json=employee)
+        return resp.json()
 
+    def update_employee_info(self, id_employee, last_name, email):
+        user_info = {
+            "lastName": last_name,
+            "email": email,
+            "isActive": True
+        }
 
-def test_change_employee_info():
-    name = "Andrey"
-    descr = "test"
-    company = api.create_company(name, descr)
-    new_id = company["id"]
-    new_employee = api.add_new_employee(new_id, "Andrey666", "Ber")
-    id_employee = new_employee["id"]
-
-    update = api.update_employee_info(id_employee, "Ber2", "test2@mail.ru")
-    assert update["id"] == id_employee
-    assert update["email"] == "test2@mail.ru"
-    assert update["isActive"] == True
+        my_headers = {}
+        my_headers["x-client-token"] = self.get_token()
+        resp = requests.patch(f"{self.url}/employee/{id_employee}", headers=my_headers, json=user_info)
+        return resp.json()
